@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ property.title }}</title>
+    <style>
+        .container {
+            width: 80%;
+            margin: auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .property-info {
+            text-align: left;
+            margin-top: 20px;
+        }
+        .property-images img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .request-btn {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            color: white;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .request-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>{{ property.title }}</h1>
+        
+        <!-- Property Images -->
+        <div class="property-images">
+            {% for image in property.images.all %}
+                <img src="{{ image.image.url }}" alt="Property Image">
+            {% endfor %}
+        </div>
+
+        <!-- Property Details -->
+        <div class="property-info">
+            <p><strong>Type:</strong> {{ property.get_property_type_display }}</p>
+            <p><strong>Location:</strong> {{ property.location }}</p>
+            <p><strong>Price:</strong> ${{ property.price }}</p>
+            <p><strong>Listed At:</strong> {{ property.listed_at }}</p>
+            <p><strong>Description:</strong> {{ property.description }}</p>
+        </div>
+
+        <!-- Request Button -->
+        <a href="#" class="request-btn">Request This Property</a>
+    </div>
+
+</body>
+</html>

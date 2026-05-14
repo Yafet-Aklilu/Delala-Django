@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Owner Dashboard</title>
+</head>
+<body>
+    <h1>Welcome, {{ request.user.username }}!</h1>
+    
+    <nav>
+        <ul>
+            <li><a href="#">Dashboard</a></li>
+            <li><a href="#">Profile</a></li>
+            <li><a href="#">Post a Property</a></li>
+            <li><a href="#">Requests</a></li>
+            <li><a href="#">Logout</a></li>
+        </ul>
+    </nav>
+    <a href="{% url 'upload_property' %}">Upload Property</a>
+</body>
+</html>

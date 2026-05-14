@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Property Listings</title>
+  <style>
+    .property-card {
+      position: relative;
+      border: 1px solid #ddd;
+      padding: 10px;
+      border-radius: 5px;
+      text-align: center;
+      width: 250px;
+      display: inline-block;
+      margin: 10px;
+    }
+    .property-image-container {
+      position: relative;
+      width: 100%;
+    }
+    .property-image-container img {
+      width: 100%;
+      height: auto;
+      border-radius: 5px;
+    }
+    .property-status {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 14px;
+      font-weight: bold;
+      color: white;
+    }
+    .property-status.sale {
+      background-color: red;
+    }
+    .property-status.rent {
+      background-color: green;
+    }
+    .details-button {
+      display: block;
+      margin-top: 10px;
+      padding: 5px 10px;
+      background-color: blue;
+      color: white;
+      text-decoration: none;
+      border-radius: 3px;
+    }
+    .property-list {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>Property Listings</h1>
+  <div class="property-list">
+    {% for property in properties %}
+      <div class="property-card">
+        <div class="property-image-container">
+          {% if property.images.all %}
+            <img src="{{ property.images.first.image.url }}" alt="Property Image">
+          {% else %}
+            <p>No image available</p>
+          {% endif %}        
+          <span class="property-status {{ property.status }}">{{ property.get_status_display }}</span>
+        </div>
+        <h3>{{ property.title }}</h3>
+        <p>{{ property.location }}</p>
+        <p>${{ property.price }}</p>
+        <a href="{% url 'property_detail' property.id %}" class="details-button">View Details</a>
+      </div>
+    {% endfor %}
+  </div>
+</body>
+</html>
