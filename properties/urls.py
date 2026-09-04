@@ -10,5 +10,5 @@ urlpatterns = [
     path('owner-home/', owner_home, name='owner_home'),path("owner-home/", owner_home, name="owner_home"),
     path("customer-home/", customer_home, name="customer_home"),
     path("add-property/", add_property, name="add_property"),
-    path('upload/', upload_property, name='upload_property'),
+    path('upload/', add_property, name='upload_property'),
 ]

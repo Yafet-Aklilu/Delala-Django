@@ -11,7 +11,7 @@ SECRET_KEY = 'django-insecure-2%5wbb65321(olt+r$&k5+8ba!+p$v$gulol%w=9v%n!$&8ut$
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 # Application definition
 INSTALLED_APPS = [
@@ -21,11 +21,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
     'properties',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'delala.cors.DevCorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -33,6 +35,21 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# Next.js frontend (development) — session cookie auth across ports
+CSRF_TRUSTED_ORIGINS = [
+    'http://127.0.0.1:3000',
+    'http://localhost:3000',
+]
+CSRF_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_HTTPONLY = False
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+}
 
 ROOT_URLCONF = 'delala.urls'
 
@@ -101,3 +118,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Keep cookies on the API host; frontend sends them with credentials: 'include'
+SESSION_COOKIE_NAME = 'delala_sessionid'
+CSRF_COOKIE_NAME = 'delala_csrftoken'

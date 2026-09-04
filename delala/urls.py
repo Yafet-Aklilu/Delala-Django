@@ -6,6 +6,7 @@ from properties.views import home  # Import home view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/', include('properties.api.urls')),
     path('', include('properties.urls')),  # Includes all URLs from properties app
 ]
 
