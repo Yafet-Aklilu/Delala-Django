@@ -14,7 +14,7 @@ export default function Intro() {
           <p className="reveal-item max-w-2xl text-[1.2rem] font-light leading-[1.7] text-ink-soft md:text-[1.45rem]">
             Delala is an Ethiopian marketplace for homes, apartments, offices,
             and shops. Browse listings, reach owners directly, and decide what
-            happens next — without the traditional middleman.
+            happens next, without the traditional middleman.
           </p>
         </div>
       </div>

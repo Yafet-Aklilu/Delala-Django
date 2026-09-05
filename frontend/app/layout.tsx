@@ -19,9 +19,9 @@ const selam = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Delala — Find a place without the middleman",
+  title: "Delala: Find a place without the middleman",
   description:
-    "Delala connects people looking for property in Ethiopia directly with owners. Browse, connect, and move forward — without the traditional middleman.",
+    "Delala connects people looking for property in Ethiopia directly with owners. Browse, connect, and move forward, without the traditional middleman.",
   openGraph: {
     title: "Delala",
     description: "Find a place. Without the middleman.",

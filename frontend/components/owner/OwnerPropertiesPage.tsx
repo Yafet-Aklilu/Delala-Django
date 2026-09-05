@@ -36,7 +36,7 @@ export default function OwnerPropertiesPage() {
         {!propertiesError && properties.length === 0 ? (
           <OwnerEmptyState
             title="List your first property"
-            description="Add photos and details, then connect directly with people who are looking — without the traditional middleman."
+            description="Add photos and details, then connect directly with people who are looking, without the traditional middleman."
             ctaHref="/owner/list-property"
             ctaLabel="List your first property"
           />

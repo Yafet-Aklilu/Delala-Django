@@ -37,10 +37,10 @@ export default function OwnerListingCard({ property, featured = false }: Props) 
         />
         <div className="absolute inset-0 bg-gradient-to-t from-bg/70 via-transparent to-transparent" />
         <div className="absolute left-4 top-4 flex flex-wrap gap-2">
-          <span className="border border-line-strong bg-bg/70 px-2.5 py-1 text-[0.65rem] uppercase tracking-[0.16em] text-ink backdrop-blur-sm">
+          <span className="border border-line-strong bg-bg/70 px-2.5 py-1 text-[0.65rem] tracking-[0.02em] text-ink backdrop-blur-sm">
             {property.status_display}
           </span>
-          <span className="border border-line-strong bg-bg/70 px-2.5 py-1 text-[0.65rem] uppercase tracking-[0.16em] text-ink-soft backdrop-blur-sm">
+          <span className="border border-line-strong bg-bg/70 px-2.5 py-1 text-[0.65rem] tracking-[0.02em] text-ink-soft backdrop-blur-sm">
             {property.property_type_display}
           </span>
         </div>
@@ -52,7 +52,7 @@ export default function OwnerListingCard({ property, featured = false }: Props) 
         }`}
       >
         <div>
-          <p className="text-xs uppercase tracking-[0.16em] text-ink-muted">
+          <p className="text-xs tracking-[0.02em] text-ink-muted">
             {property.location}
           </p>
           <h3 className="display mt-2 text-2xl leading-tight text-ink sm:text-[1.75rem]">

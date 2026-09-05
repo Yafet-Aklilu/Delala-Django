@@ -366,7 +366,7 @@ export default function ListPropertyForm() {
                       className="object-cover"
                     />
                     {index === 0 ? (
-                      <span className="absolute left-2 top-2 border border-accent bg-bg/80 px-2 py-1 text-[0.6rem] uppercase tracking-[0.14em] text-accent backdrop-blur-sm">
+                      <span className="absolute left-2 top-2 border border-accent bg-bg/80 px-2 py-1 text-[0.6rem] tracking-[0.02em] text-accent backdrop-blur-sm">
                         Primary
                       </span>
                     ) : null}
@@ -374,7 +374,7 @@ export default function ListPropertyForm() {
                       type="button"
                       disabled={submitting}
                       onClick={() => removePreview(preview.id)}
-                      className="absolute bottom-2 right-2 border border-line-strong bg-bg/85 px-2 py-1 text-[0.65rem] uppercase tracking-[0.12em] text-ink hover:border-ink"
+                      className="absolute bottom-2 right-2 border border-line-strong bg-bg/85 px-2 py-1 text-[0.65rem] tracking-[0.02em] text-ink hover:border-ink"
                     >
                       Remove
                     </button>

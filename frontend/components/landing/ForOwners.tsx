@@ -29,7 +29,7 @@ export default function ForOwners() {
           </h2>
           <p className="reveal-item mt-8 max-w-md text-base font-light leading-relaxed text-ink-soft md:text-lg">
             List your home, apartment, office, or shop and meet people who are
-            already looking — without a middleman first.
+            already looking, without a middleman first.
           </p>
 
           <div className="reveal-item mt-10">

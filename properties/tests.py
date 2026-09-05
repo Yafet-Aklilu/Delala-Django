@@ -1,7 +1,9 @@
 from django.contrib.auth.models import User
 from django.test import TestCase
 from rest_framework.test import APIClient
+from unittest.mock import patch
 
+from delala.firebase import FirebaseAuthError
 from properties.models import (
     Conversation,
     Message,
@@ -271,3 +273,264 @@ class MessagingAPITests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["id"], self.property_request.id)
+
+
+class FirebaseSessionExchangeTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.owner = User.objects.create_user(
+            username="fb_owner",
+            email="fb_owner@gmail.com",
+            password="pass12345",
+            first_name="Fb",
+            last_name="Owner",
+        )
+        self.owner_profile = Profile.objects.create(
+            user=self.owner,
+            user_type="owner",
+            phone_no="0911222001",
+        )
+        self.customer = User.objects.create_user(
+            username="fb_customer",
+            email="fb_customer@gmail.com",
+            password="pass12345",
+            first_name="Fb",
+            last_name="Customer",
+        )
+        self.customer_profile = Profile.objects.create(
+            user=self.customer,
+            user_type="customer",
+            phone_no="0911222002",
+        )
+
+    def _exchange(self, payload):
+        return self.client.post("/api/auth/firebase/", payload, format="json")
+
+    @patch("properties.api.auth_views.verify_firebase_id_token")
+    def test_links_existing_user_by_firebase_uid(self, mock_verify):
+        self.owner_profile.firebase_uid = "uid-owner-1"
+        self.owner_profile.save(update_fields=["firebase_uid"])
+        mock_verify.return_value = {
+            "uid": "uid-owner-1",
+            "email": "other@gmail.com",
+            "email_verified": False,
+            "aud": "test-project",
+        }
+
+        response = self._exchange({"id_token": "fake-token"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["user"]["id"], self.owner.id)
+        self.assertEqual(response.data["user"]["user_type"], "owner")
+        self.assertEqual(response.data["redirect"], "/owner")
+
+        me = self.client.get("/api/auth/me/")
+        self.assertEqual(me.status_code, 200)
+        self.assertEqual(me.data["user"]["id"], self.owner.id)
+
+    @patch("properties.api.auth_views.verify_firebase_id_token")
+    def test_links_existing_user_by_verified_email_without_duplicate(self, mock_verify):
+        mock_verify.return_value = {
+            "uid": "uid-customer-new",
+            "email": "fb_customer@gmail.com",
+            "email_verified": True,
+            "aud": "test-project",
+        }
+
+        before = User.objects.filter(email__iexact="fb_customer@gmail.com").count()
+        response = self._exchange({"id_token": "fake-token"})
+        after = User.objects.filter(email__iexact="fb_customer@gmail.com").count()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(before, 1)
+        self.assertEqual(after, 1)
+        self.assertEqual(response.data["user"]["id"], self.customer.id)
+        self.assertEqual(response.data["user"]["user_type"], "customer")
+        self.customer_profile.refresh_from_db()
+        self.assertEqual(self.customer_profile.firebase_uid, "uid-customer-new")
+        self.assertEqual(self.customer_profile.phone_no, "0911222002")
+
+    @patch("properties.api.auth_views.verify_firebase_id_token")
+    def test_unverified_email_cannot_link_by_email(self, mock_verify):
+        mock_verify.return_value = {
+            "uid": "uid-unverified",
+            "email": "fb_customer@gmail.com",
+            "email_verified": False,
+            "aud": "test-project",
+        }
+        response = self._exchange({"id_token": "fake-token"})
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.data["code"], "email_unverified")
+        self.customer_profile.refresh_from_db()
+        self.assertIsNone(self.customer_profile.firebase_uid)
+
+    @patch("properties.api.auth_views.verify_firebase_id_token")
+    def test_new_account_requires_profile_fields(self, mock_verify):
+        mock_verify.return_value = {
+            "uid": "uid-brand-new",
+            "email": "brandnew@gmail.com",
+            "email_verified": True,
+            "aud": "test-project",
+        }
+        response = self._exchange({"id_token": "fake-token"})
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.data["code"], "profile_completion_required")
+        self.assertFalse(User.objects.filter(email="brandnew@gmail.com").exists())
+
+    @patch("properties.api.auth_views.verify_firebase_id_token")
+    def test_new_account_created_with_complete_profile(self, mock_verify):
+        mock_verify.return_value = {
+            "uid": "uid-brand-new-2",
+            "email": "brandnew2@gmail.com",
+            "email_verified": True,
+            "aud": "test-project",
+        }
+        response = self._exchange(
+            {
+                "id_token": "fake-token",
+                "user_type": "customer",
+                "username": "brandnew2",
+                "first_name": "Brand",
+                "last_name": "New",
+                "phone_no": "0911222999",
+            }
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["user"]["email"], "brandnew2@gmail.com")
+        self.assertEqual(response.data["user"]["user_type"], "customer")
+        user = User.objects.get(email="brandnew2@gmail.com")
+        self.assertFalse(user.has_usable_password())
+        self.assertEqual(user.profile.firebase_uid, "uid-brand-new-2")
+
+        me = self.client.get("/api/auth/me/")
+        self.assertEqual(me.status_code, 200)
+        self.assertEqual(me.data["user"]["id"], user.id)
+
+    @patch("properties.api.auth_views.verify_firebase_id_token")
+    def test_missing_token_rejected(self, mock_verify):
+        mock_verify.side_effect = FirebaseAuthError(
+            "missing_token",
+            "Firebase ID token is required.",
+            status=400,
+        )
+        response = self._exchange({})
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.data["code"], "missing_token")
+
+    @patch("properties.api.auth_views.verify_firebase_id_token")
+    def test_invalid_token_rejected(self, mock_verify):
+        mock_verify.side_effect = FirebaseAuthError(
+            "invalid_token",
+            "Firebase ID token is invalid.",
+            status=401,
+        )
+        response = self._exchange({"id_token": "bad"})
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.data["code"], "invalid_token")
+
+    @patch("properties.api.auth_views.verify_firebase_id_token")
+    def test_owner_role_preserved_after_email_link(self, mock_verify):
+        mock_verify.return_value = {
+            "uid": "uid-owner-email",
+            "email": "fb_owner@gmail.com",
+            "email_verified": True,
+        }
+        response = self._exchange({"id_token": "fake-token"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["user"]["user_type"], "owner")
+        self.owner_profile.refresh_from_db()
+        self.assertEqual(self.owner_profile.user_type, "owner")
+        self.assertEqual(self.owner_profile.firebase_uid, "uid-owner-email")
+
+    @patch("properties.api.auth_views.verify_firebase_id_token")
+    def test_customer_role_preserved_after_email_link(self, mock_verify):
+        mock_verify.return_value = {
+            "uid": "uid-customer-email",
+            "email": "fb_customer@gmail.com",
+            "email_verified": True,
+        }
+        response = self._exchange({"id_token": "fake-token"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["user"]["user_type"], "customer")
+        self.customer_profile.refresh_from_db()
+        self.assertEqual(self.customer_profile.user_type, "customer")
+
+    @patch("properties.api.auth_views.verify_firebase_id_token")
+    def test_existing_user_without_profile_returns_completion_required(
+        self, mock_verify
+    ):
+        orphan = User.objects.create_user(
+            username="orphan_fb",
+            email="orphan_fb@gmail.com",
+            password="pass12345",
+            first_name="Orphan",
+            last_name="User",
+        )
+        self.assertFalse(Profile.objects.filter(user=orphan).exists())
+
+        mock_verify.return_value = {
+            "uid": "uid-orphan",
+            "email": "orphan_fb@gmail.com",
+            "email_verified": True,
+            "aud": "test-project",
+        }
+        response = self._exchange({"id_token": "fake-token"})
+
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.data["code"], "profile_completion_required")
+        self.assertEqual(response.data["email"], "orphan_fb@gmail.com")
+        self.assertEqual(response.data["firebase_uid"], "uid-orphan")
+        # Still no Profile invented; User not duplicated.
+        self.assertFalse(Profile.objects.filter(user=orphan).exists())
+        self.assertEqual(
+            User.objects.filter(email__iexact="orphan_fb@gmail.com").count(),
+            1,
+        )
+        # No Django session for incomplete account.
+        me = self.client.get("/api/auth/me/")
+        self.assertEqual(me.status_code, 403)
+
+    @patch("properties.api.auth_views.verify_firebase_id_token")
+    def test_existing_user_without_profile_can_complete(self, mock_verify):
+        orphan = User.objects.create_user(
+            username="orphan_complete",
+            email="orphan_complete@gmail.com",
+            password="pass12345",
+            first_name="Orphan",
+            last_name="Complete",
+        )
+        mock_verify.return_value = {
+            "uid": "uid-orphan-complete",
+            "email": "orphan_complete@gmail.com",
+            "email_verified": True,
+        }
+        response = self._exchange(
+            {
+                "id_token": "fake-token",
+                "user_type": "owner",
+                "username": "orphan_complete",
+                "phone_no": "0911222888",
+            }
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["user"]["id"], orphan.id)
+        self.assertEqual(response.data["user"]["user_type"], "owner")
+        self.assertEqual(response.data["redirect"], "/owner")
+        profile = Profile.objects.get(user=orphan)
+        self.assertEqual(profile.firebase_uid, "uid-orphan-complete")
+        self.assertEqual(profile.phone_no, "0911222888")
+        me = self.client.get("/api/auth/me/")
+        self.assertEqual(me.status_code, 200)
+        self.assertEqual(me.data["user"]["id"], orphan.id)
+
+    @patch("properties.api.auth_views.verify_firebase_id_token")
+    def test_existing_user_with_profile_still_links_normally(self, mock_verify):
+        mock_verify.return_value = {
+            "uid": "uid-still-links",
+            "email": "fb_owner@gmail.com",
+            "email_verified": True,
+        }
+        response = self._exchange({"id_token": "fake-token"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["user"]["id"], self.owner.id)
+        self.owner_profile.refresh_from_db()
+        self.assertEqual(self.owner_profile.firebase_uid, "uid-still-links")

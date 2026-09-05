@@ -2,6 +2,7 @@ from django.urls import path
 
 from .auth_views import (
     CsrfAPIView,
+    FirebaseSessionExchangeAPIView,
     LoginAPIView,
     LogoutAPIView,
     MeAPIView,
@@ -44,6 +45,7 @@ urlpatterns = [
     path('notifications/', NotificationListAPIView.as_view(), name='api_notifications'),
     path('notifications/mark-read/', NotificationMarkReadAPIView.as_view(), name='api_notifications_mark_read'),
     path('auth/csrf/', CsrfAPIView.as_view(), name='api_auth_csrf'),
+    path('auth/firebase/', FirebaseSessionExchangeAPIView.as_view(), name='api_auth_firebase'),
     path('auth/login/', LoginAPIView.as_view(), name='api_auth_login'),
     path('auth/signup/', SignupAPIView.as_view(), name='api_auth_signup'),
     path('auth/logout/', LogoutAPIView.as_view(), name='api_auth_logout'),

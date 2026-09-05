@@ -38,7 +38,7 @@ export default function CustomerDashboard() {
           {greetingForNow()}, {name}.
         </h1>
         <p className="mt-4 max-w-xl text-base font-light leading-relaxed text-ink-soft">
-          Browse places on Delala and connect with owners directly — without the
+          Browse places on Delala and connect with owners directly, without the
           traditional middleman.
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">

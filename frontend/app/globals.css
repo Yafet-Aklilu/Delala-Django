@@ -101,8 +101,8 @@ img {
 
 .eyebrow {
   font-size: 0.7rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-transform: none;
   color: var(--ink-muted);
 }
 
@@ -121,8 +121,8 @@ img {
   padding: 0.75rem 1.35rem;
   border: 1px solid transparent;
   font-size: 0.8rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-transform: none;
   transition:
     background-color 0.35s ease,
     color 0.35s ease,
@@ -158,8 +158,8 @@ img {
 .nav-link {
   position: relative;
   font-size: 0.78rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-transform: none;
   color: var(--ink-soft);
   transition: color 0.3s ease;
 }
@@ -233,6 +233,36 @@ img {
   max-width: 28rem;
 }
 
+.auth-or {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.auth-or__line {
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.auth-or__label {
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--ink-muted);
+}
+
+.google-g {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.google-g svg {
+  display: block;
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -241,8 +271,8 @@ img {
 
 .field label {
   font-size: 0.72rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-transform: none;
   color: var(--ink-muted);
 }
 
@@ -329,11 +359,12 @@ img {
 }
 
 .owner-nav-link {
+  position: relative;
   display: block;
   padding: 0.7rem 0.85rem;
   font-size: 0.78rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-transform: none;
   color: var(--ink-muted);
   border-left: 1px solid transparent;
   transition:
@@ -461,8 +492,8 @@ img {
   border: 1px solid var(--line);
   background: rgba(8, 8, 8, 0.72);
   font-size: 0.68rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-transform: none;
   color: var(--ink-soft);
 }
 
@@ -748,8 +779,8 @@ img {
   padding: 0.2rem 0.55rem;
   border: 1px solid var(--line-strong);
   font-size: 0.65rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-transform: none;
   color: var(--ink-soft);
 }
 
@@ -871,8 +902,8 @@ img {
 .message-bubble__meta {
   margin-top: 0.45rem;
   font-size: 0.62rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-transform: none;
   color: var(--ink-muted);
 }
 
@@ -950,6 +981,36 @@ img {
     color 200ms ease,
     background-color 200ms ease,
     transform 200ms ease;
+}
+
+.messages-nav-badge {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.4rem;
+  min-width: 1.05rem;
+  height: 1.05rem;
+  padding: 0 0.25rem;
+  border: 1px solid var(--bg-raised);
+  background: var(--accent);
+  color: #111;
+  font-size: 0.58rem;
+  font-weight: 600;
+  line-height: 1.05rem;
+  text-align: center;
+  letter-spacing: 0;
+  text-transform: none;
+  pointer-events: none;
+}
+
+.messages-nav-badge--fab {
+  top: -0.15rem;
+  right: -0.15rem;
+  border-color: var(--bg);
+}
+
+.messages-nav-badge--mobile {
+  top: 0.35rem;
+  right: calc(50% - 1.15rem);
 }
 
 .messages-fab:hover {

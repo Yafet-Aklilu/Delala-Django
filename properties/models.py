@@ -20,6 +20,13 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     user_type = models.CharField(max_length=10, choices=USER_TYPES)
     phone_no = models.CharField(max_length=15, unique=True)  # Ensure unique phone numbers
+    # Linked Firebase Auth UID. Null for legacy Django-only accounts until first exchange.
+    firebase_uid = models.CharField(
+        max_length=128,
+        unique=True,
+        null=True,
+        blank=True,
+    )
 
     def __str__(self):
         return f"{self.user.username} - {self.user_type}"

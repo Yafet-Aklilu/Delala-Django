@@ -25,7 +25,7 @@ export default function MarketingLanding({ properties, user = null }: Props) {
         <Hero user={user} />
         <Intro />
         <HowItWorks />
-        <PropertyShowcase properties={properties} />
+        <PropertyShowcase properties={properties} user={user} />
         <ForOwners />
         <WhyDelala />
         <FinalCTA user={user} />

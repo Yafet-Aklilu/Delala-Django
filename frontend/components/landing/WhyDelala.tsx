@@ -41,7 +41,7 @@ export default function WhyDelala() {
               <span className="display text-3xl md:text-4xl">Customer</span>
             </div>
             <p className="mt-10 max-w-md text-sm font-light leading-relaxed text-ink-soft md:text-base">
-              Delala is where you meet — not another gatekeeper. Direct connection,
+              Delala is where you meet, not another gatekeeper. Direct connection,
               clearer discovery, less friction.
             </p>
           </article>

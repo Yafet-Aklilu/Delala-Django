@@ -1,10 +1,16 @@
 import type {
+  AuthErrors,
   AuthFailure,
   AuthSuccess,
   AuthUser,
+  CompleteFirebaseProfilePayload,
+  GoogleAuthResult,
+  ProfileCompletionNeeded,
   UserType,
 } from "./auth-types";
 import { API_BASE } from "./config";
+import { getFirebaseAuth } from "./firebase";
+import { GoogleAuthProvider, signInWithPopup, type AuthError } from "firebase/auth";
 
 const AUTH_CHANGE_EVENT = "delala:auth-change";
 
@@ -244,6 +250,310 @@ export async function signup(
   }
 }
 
+function isFirebaseAuthError(error: unknown): error is AuthError {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    typeof (error as { code: unknown }).code === "string"
+  );
+}
+
+function logGoogleAuthDebug(info: {
+  stage: string;
+  status?: number;
+  code?: string;
+  detail?: string;
+}): void {
+  if (process.env.NODE_ENV === "production") return;
+  // Dev-only: never log tokens, cookies, or credentials.
+  console.warn("[delala:google-auth]", {
+    stage: info.stage,
+    status: info.status ?? null,
+    code: info.code ?? null,
+    detail: info.detail ?? null,
+  });
+}
+
+async function parseFirebaseExchangeResponse(
+  response: Response,
+): Promise<GoogleAuthResult> {
+  let data: Record<string, unknown> = {};
+  try {
+    data = (await response.json()) as Record<string, unknown>;
+  } catch {
+    logGoogleAuthDebug({
+      stage: "django_response_parse",
+      status: response.status,
+      detail: "non_json_body",
+    });
+    return {
+      errors: { form: "Something went wrong. Please try again." },
+    };
+  }
+
+  if (!response.ok) {
+    const code = typeof data.code === "string" ? data.code : "";
+    const detail =
+      (typeof data.detail === "string" && data.detail) ||
+      "Google sign-in could not be completed.";
+
+    logGoogleAuthDebug({
+      stage: "django_exchange",
+      status: response.status,
+      code: code || undefined,
+      detail,
+    });
+
+    if (code === "profile_completion_required") {
+      const email = typeof data.email === "string" ? data.email : "";
+      const firebaseUid =
+        typeof data.firebase_uid === "string" ? data.firebase_uid : "";
+      const fieldErrors =
+        data.errors && typeof data.errors === "object"
+          ? (data.errors as AuthErrors)
+          : undefined;
+      return {
+        needsProfileCompletion: true,
+        email,
+        firebase_uid: firebaseUid,
+        ...(fieldErrors ? { errors: fieldErrors } : {}),
+      };
+    }
+
+    if (code === "email_unverified") {
+      return {
+        errors: {
+          form: "Verify your Google email before signing in to Delala.",
+        },
+      };
+    }
+
+    if (
+      code === "firebase_not_configured" ||
+      code === "firebase_unavailable" ||
+      code === "firebase_init_failed"
+    ) {
+      return {
+        errors: {
+          form:
+            "Google sign-in is not configured on the server yet. Set FIREBASE_CREDENTIALS_FILE for Django, then try again.",
+        },
+      };
+    }
+
+    if (data.errors && typeof data.errors === "object") {
+      return { errors: data.errors as AuthErrors };
+    }
+
+    return {
+      errors: {
+        form: code ? `${detail} (${code})` : detail,
+      },
+    };
+  }
+
+  if (!data.user || typeof data.user !== "object") {
+    logGoogleAuthDebug({
+      stage: "django_exchange",
+      status: response.status,
+      detail: "missing_user_payload",
+    });
+    return {
+      errors: { form: "Google sign-in could not be completed." },
+    };
+  }
+
+  return {
+    user: data.user as AuthUser,
+    redirect:
+      (typeof data.redirect === "string" && data.redirect) ||
+      dashboardPathFor((data.user as AuthUser).user_type),
+  };
+}
+
+/**
+ * Google Sign-In via Firebase popup → Django session exchange.
+ * Does not replace email/password login.
+ */
+export async function loginWithGoogle(): Promise<GoogleAuthResult> {
+  let stage =
+    "init" as
+      | "init"
+      | "popup"
+      | "id_token"
+      | "csrf_or_request"
+      | "django_exchange"
+      | "auth_state";
+
+  try {
+    stage = "init";
+    const auth = getFirebaseAuth();
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+
+    stage = "popup";
+    const credential = await signInWithPopup(auth, provider);
+
+    stage = "id_token";
+    const idToken = await credential.user.getIdToken();
+
+    stage = "csrf_or_request";
+    const response = await authFetch("/api/auth/firebase/", {
+      method: "POST",
+      body: JSON.stringify({ id_token: idToken }),
+    });
+
+    stage = "django_exchange";
+    const result = await parseFirebaseExchangeResponse(response);
+
+    if (isAuthSuccess(result)) {
+      stage = "auth_state";
+      csrfTokenCache = null;
+      emitAuthChange(result.user);
+    }
+    return result;
+  } catch (error) {
+    if (isFirebaseAuthError(error)) {
+      logGoogleAuthDebug({
+        stage,
+        code: error.code,
+        detail: error.message,
+      });
+
+      if (
+        error.code === "auth/popup-closed-by-user" ||
+        error.code === "auth/cancelled-popup-request"
+      ) {
+        return { errors: { form: "Google sign-in was cancelled." } };
+      }
+      if (error.code === "auth/popup-blocked") {
+        return {
+          errors: {
+            form: "Pop-up was blocked. Allow pop-ups for this site and try again.",
+          },
+        };
+      }
+      if (error.code === "auth/network-request-failed") {
+        return {
+          errors: {
+            form: "Network error during Google sign-in. Check your connection.",
+          },
+        };
+      }
+      if (error.code === "auth/unauthorized-domain") {
+        return {
+          errors: {
+            form: "This domain is not authorized for Google sign-in in Firebase.",
+          },
+        };
+      }
+      if (error.code === "auth/operation-not-allowed") {
+        return {
+          errors: {
+            form: "Google sign-in is not enabled in the Firebase console.",
+          },
+        };
+      }
+
+      return {
+        errors: {
+          form: `Google sign-in failed (${error.code}).`,
+        },
+      };
+    }
+
+    const message = error instanceof Error ? error.message : "Unknown error";
+    logGoogleAuthDebug({
+      stage,
+      detail: message,
+    });
+
+    if (/Firebase client config/i.test(message)) {
+      return {
+        errors: {
+          form: "Google sign-in is not configured. Check Firebase environment variables.",
+        },
+      };
+    }
+
+    if (/secure session/i.test(message)) {
+      return {
+        errors: {
+          form: "Could not start a secure session with the server (CSRF). Is Django running?",
+        },
+      };
+    }
+
+    return {
+      errors: {
+        form: `Unable to complete Google sign-in (${stage}). ${message}`,
+      },
+    };
+  }
+}
+
+/**
+ * Finish Delala Profile after Google/Firebase identity was verified.
+ * Uses the current Firebase client session to obtain a fresh ID token.
+ */
+export async function completeFirebaseProfile(
+  payload: CompleteFirebaseProfilePayload,
+): Promise<AuthSuccess | AuthFailure> {
+  try {
+    const auth = getFirebaseAuth();
+    const current = auth.currentUser;
+    if (!current) {
+      return {
+        errors: {
+          form: "Google session expired. Continue with Google again.",
+        },
+      };
+    }
+
+    const idToken = await current.getIdToken();
+    const displayName = (current.displayName || "").trim();
+    const nameParts = displayName.split(/\s+/).filter(Boolean);
+    const firstName =
+      payload.first_name || nameParts[0] || current.email?.split("@")[0] || "User";
+    const lastName = payload.last_name || nameParts.slice(1).join(" ") || "";
+
+    const response = await authFetch("/api/auth/firebase/", {
+      method: "POST",
+      body: JSON.stringify({
+        id_token: idToken,
+        user_type: payload.user_type,
+        username: payload.username,
+        phone_no: payload.phone_no,
+        first_name: firstName,
+        last_name: lastName,
+      }),
+    });
+
+    const result = await parseFirebaseExchangeResponse(response);
+    if (isProfileCompletionNeeded(result)) {
+      return {
+        errors: {
+          form: "Could not complete your Delala profile. Check the fields and try again.",
+          ...(result.errors || {}),
+        },
+      };
+    }
+    if (isAuthSuccess(result)) {
+      csrfTokenCache = null;
+      emitAuthChange(result.user);
+      return result;
+    }
+    return result;
+  } catch {
+    return {
+      errors: {
+        form: "Unable to complete your profile. Please try again.",
+      },
+    };
+  }
+}
+
 export async function logout(): Promise<void> {
   try {
     csrfTokenCache = null;
@@ -267,9 +577,26 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 }
 
 export function isAuthSuccess(
-  result: AuthSuccess | AuthFailure,
+  result: AuthSuccess | AuthFailure | GoogleAuthResult,
 ): result is AuthSuccess {
-  return "user" in result && Boolean((result as AuthSuccess).user);
+  return (
+    typeof result === "object" &&
+    result !== null &&
+    "user" in result &&
+    Boolean((result as AuthSuccess).user) &&
+    !("needsProfileCompletion" in result)
+  );
+}
+
+export function isProfileCompletionNeeded(
+  result: GoogleAuthResult | AuthSuccess | AuthFailure,
+): result is ProfileCompletionNeeded {
+  return (
+    typeof result === "object" &&
+    result !== null &&
+    "needsProfileCompletion" in result &&
+    (result as ProfileCompletionNeeded).needsProfileCompletion === true
+  );
 }
 
 export function dashboardPathFor(userType: UserType | null | undefined): string {

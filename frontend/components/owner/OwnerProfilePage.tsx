@@ -22,17 +22,17 @@ export default function OwnerProfilePage() {
       <div className="reveal-item mt-8 border border-line bg-bg-raised">
         <dl className="divide-y divide-line">
           {[
-            { label: "Name", value: [user.first_name, user.last_name].filter(Boolean).join(" ") || "—" },
+            { label: "Name", value: [user.first_name, user.last_name].filter(Boolean).join(" ") || "-" },
             { label: "Username", value: user.username },
             { label: "Email", value: user.email },
-            { label: "Phone", value: user.phone_no || "—" },
+            { label: "Phone", value: user.phone_no || "-" },
             { label: "Account type", value: "Property Owner" },
           ].map((row) => (
             <div
               key={row.label}
               className="grid gap-1 px-5 py-5 sm:grid-cols-3 sm:gap-4 sm:px-6"
             >
-              <dt className="text-xs uppercase tracking-[0.16em] text-ink-muted">
+              <dt className="text-xs tracking-[0.02em] text-ink-muted">
                 {row.label}
               </dt>
               <dd className="text-base text-ink sm:col-span-2">{row.value}</dd>

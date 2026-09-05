@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useCustomer } from "./CustomerProvider";
 import NotificationBell from "@/components/notifications/NotificationBell";
+import UnreadMessageBadge from "@/components/messages/UnreadMessageBadge";
+import { useUnreadMessageCount } from "@/lib/useUnreadMessageCount";
 
 const navItems = [
   { href: "/", label: "Home", exact: true },
@@ -34,6 +36,7 @@ export default function CustomerShell({
     markNotificationsRead,
   } = useCustomer();
   const [menuOpen, setMenuOpen] = useState(false);
+  const messageUnreadCount = useUnreadMessageCount(true);
 
   return (
     <div className="min-h-screen bg-bg text-ink">
@@ -53,13 +56,22 @@ export default function CustomerShell({
         <nav className="flex flex-1 flex-col gap-1 px-3 py-6">
           {navItems.map((item) => {
             const active = isActive(pathname, item.href, item.exact);
+            const isMessages = item.label === "Messages";
             return (
               <Link
                 key={`${item.href}-${item.label}`}
                 href={item.href}
                 className={`owner-nav-link ${active ? "is-active" : ""}`}
+                aria-label={
+                  isMessages && messageUnreadCount > 0
+                    ? `Messages, ${messageUnreadCount} unread`
+                    : undefined
+                }
               >
                 {item.label}
+                {isMessages ? (
+                  <UnreadMessageBadge count={messageUnreadCount} />
+                ) : null}
               </Link>
             );
           })}
@@ -129,14 +141,23 @@ export default function CustomerShell({
             <div className="flex flex-col gap-1">
               {navItems.map((item) => {
                 const active = isActive(pathname, item.href, item.exact);
+                const isMessages = item.label === "Messages";
                 return (
                   <Link
                     key={`${item.href}-${item.label}`}
                     href={item.href}
                     onClick={() => setMenuOpen(false)}
                     className={`owner-nav-link ${active ? "is-active" : ""}`}
+                    aria-label={
+                      isMessages && messageUnreadCount > 0
+                        ? `Messages, ${messageUnreadCount} unread`
+                        : undefined
+                    }
                   >
                     {item.label}
+                    {isMessages ? (
+                      <UnreadMessageBadge count={messageUnreadCount} />
+                    ) : null}
                   </Link>
                 );
               })}
@@ -171,21 +192,27 @@ export default function CustomerShell({
         <div className="grid grid-cols-6">
           {navItems.map((item) => {
             const active = isActive(pathname, item.href, item.exact);
+            const isMessages = item.label === "Messages";
             const label =
               item.label === "My Requests"
                 ? "Requests"
                 : item.label === "Dashboard"
                   ? "Dash"
-                  : item.label === "Messages"
+                  : isMessages
                     ? "Inbox"
                     : item.label;
             return (
               <Link
                 key={`${item.href}-${item.label}`}
                 href={item.href}
-                className={`flex min-h-14 flex-col items-center justify-center gap-1 px-0.5 text-[0.6rem] tracking-[0.1em] uppercase ${
+                className={`relative flex min-h-14 flex-col items-center justify-center gap-1 px-0.5 text-[0.6rem] tracking-[0.02em] ${
                   active ? "text-accent" : "text-ink-muted"
                 }`}
+                aria-label={
+                  isMessages && messageUnreadCount > 0
+                    ? `Messages, ${messageUnreadCount} unread`
+                    : undefined
+                }
               >
                 <span
                   className={`h-1 w-1 rounded-full ${
@@ -193,6 +220,12 @@ export default function CustomerShell({
                   }`}
                 />
                 {label}
+                {isMessages ? (
+                  <UnreadMessageBadge
+                    count={messageUnreadCount}
+                    className="messages-nav-badge--mobile"
+                  />
+                ) : null}
               </Link>
             );
           })}

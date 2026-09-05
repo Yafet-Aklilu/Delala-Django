@@ -195,7 +195,7 @@ function NotificationBody({ item }: { item: AppNotification }) {
       <p className="mt-1 text-xs font-light leading-relaxed text-ink-soft">
         {item.message}
       </p>
-      <p className="mt-2 text-[0.65rem] uppercase tracking-[0.14em] text-ink-muted">
+      <p className="mt-2 text-[0.65rem] tracking-[0.02em] text-ink-muted">
         {formatRequestDate(item.created_at)}
       </p>
     </>

@@ -386,7 +386,7 @@ export default function MessagesWorkspace({ role }: Props) {
                         <p className="mt-2 line-clamp-2 text-xs font-light text-ink-muted">
                           {item.latest_message?.body || "No messages yet"}
                         </p>
-                        <p className="mt-2 text-[0.65rem] uppercase tracking-[0.14em] text-ink-muted">
+                        <p className="mt-2 text-[0.65rem] tracking-[0.02em] text-ink-muted">
                           {formatRequestDate(item.updated_at)}
                         </p>
                       </button>

@@ -58,9 +58,9 @@ export default function Hero({ user = null }: Props) {
 
           <p className="hero-copy mt-7 max-w-md text-[1.02rem] font-light leading-relaxed text-ink-soft md:mt-8 md:text-lg">
             {role === "owner"
-              ? "Manage your listings and connect with people looking — directly on Delala."
+              ? "Manage your listings and connect with people looking, directly on Delala."
               : role === "customer"
-                ? "Browse places and reach owners directly — without the traditional middleman."
+                ? "Browse places and reach owners directly, without the traditional middleman."
                 : "Connect with property owners in Ethiopia directly."}
           </p>
 
