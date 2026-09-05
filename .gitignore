@@ -1,0 +1,38 @@
+# Secrets and local env overrides — never commit real values
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Django local artifacts (do not treat as deploy source of truth)
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+staticfiles/
+
+# Local uploaded media (keep directory locally; do not commit uploads)
+media/
+!media/.gitkeep
+
+# Firebase Admin service-account credentials (never commit)
+*firebase*service*account*.json
+*firebase-adminsdk*.json
+secrets/
+credentials/
