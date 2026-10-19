@@ -36,3 +36,5 @@ media/
 *firebase-adminsdk*.json
 secrets/
 credentials/
+
+.env.render*

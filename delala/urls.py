@@ -10,5 +10,8 @@ urlpatterns = [
     path('', include('properties.urls')),  # Includes all URLs from properties app
 ]
 
-if settings.DEBUG:
+# Local disk media: serve in DEBUG and on free/demo deploys without S3/R2.
+from delala.storage import use_s3_media
+
+if settings.DEBUG or not use_s3_media():
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
